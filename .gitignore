@@ -1,0 +1,6 @@
+/formkit
+/formkit-data/
+*.db
+*.db-wal
+*.db-shm
+.env
