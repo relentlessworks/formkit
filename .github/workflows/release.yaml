@@ -14,12 +14,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target:
-          - linux/amd64
-          - linux/arm64
-          - darwin/amd64
-          - darwin/arm64
-          - windows/amd64
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -27,16 +32,16 @@ jobs:
           go-version-file: go.mod
       - name: Build
         env:
-          GOOS: ${{ matrix.target == 'linux/amd64' && 'linux' || matrix.target == 'linux/arm64' && 'linux' || matrix.target == 'darwin/amd64' && 'darwin' || matrix.target == 'darwin/arm64' && 'darwin' || 'windows' }}
-          GOARCH: ${{ matrix.target == 'linux/amd64' && 'amd64' || matrix.target == 'linux/arm64' && 'arm64' || matrix.target == 'darwin/amd64' && 'amd64' || matrix.target == 'darwin/arm64' && 'arm64' || 'amd64' }}
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: 0
         run: |
           go build -trimpath -ldflags "-s -w" -o formkit ./cmd/formkit
-          tar czf formkit-${{ matrix.target }}.tar.gz formkit
+          tar czf formkit-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz formkit
       - uses: actions/upload-artifact@v4
         with:
-          name: formkit-${{ matrix.target }}
-          path: formkit-${{ matrix.target }}.tar.gz
+          name: formkit-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: formkit-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
 
   publish:
     needs: release
@@ -45,10 +50,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
-          merge-matches: true
       - name: Generate checksums
         run: |
           cd artifacts
+          find . -name '*.tar.gz' -exec mv {} . \;
           sha256sum *.tar.gz > checksums.txt
       - uses: softprops/action-gh-release@v2
         with:
