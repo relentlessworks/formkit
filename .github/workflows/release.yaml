@@ -47,6 +47,7 @@ jobs:
     needs: release
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
@@ -55,8 +56,12 @@ jobs:
           cd artifacts
           find . -name '*.tar.gz' -exec mv {} . \;
           sha256sum *.tar.gz > checksums.txt
+      - name: Read version
+        id: version
+        run: echo "TAG=v$(cat VERSION)" >> $GITHUB_OUTPUT
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.TAG }}
           files: |
             artifacts/*.tar.gz
             artifacts/checksums.txt
